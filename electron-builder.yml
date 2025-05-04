@@ -2,6 +2,7 @@ appId: com.electron.app
 productName: test-game-launcher
 directories:
   buildResources: build
+  output: dist
 files:
   - '!**/.vscode/*'
   - '!src/*'
@@ -9,8 +10,11 @@ files:
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - 'out/**'
   - 'node_modules/@electron-toolkit/**'
-asar: false
+asar: true
+asarUnpack:
+  - 'node_modules/@electron-toolkit/**'
 win:
   executableName: test-game-launcher
 nsis:
