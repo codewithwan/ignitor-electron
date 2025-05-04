@@ -28,7 +28,7 @@ const developers: Developer[] = [
         name: 'Muhammad Ridwan',
         nim: '3.34.23.3.15',
         role: 'Chill Developer',
-        description: 'Berfokus pada pengembangan game dan launcher game walau aslinya ga fokus fokus amat',
+        description: 'Aslinya wengdev garis keras',
         funnyNote: 'when yh jago..',
         icon: <Coffee size={30} />,
         color: '#FF6B6B',
@@ -50,8 +50,8 @@ const developers: Developer[] = [
         name: 'Dea Derika Winahyu',
         nim: '3.34.23.3.06',
         role: 'Apa aja di kerjain',
-        description: 'Bertanggung jawab atas desain visual dan pengalaman pengguna yang intuitif.',
-        funnyNote: 'Punya 627 font, tapi selalu pakai Poppins dan Montserrat aja.',
+        description: 'Ngerjain apa yang bisa dikerjain',
+        funnyNote: '2in',
         icon: <Pizza size={30} />,
         color: '#3B82F6',
         imgUrl: ''
@@ -61,8 +61,8 @@ const developers: Developer[] = [
         name: 'KARTIKA YULIANA',
         nim: '3.34.23.3.11',
         role: 'Apa aja di kerjain',
-        description: 'Fokus pada pengembangan mekanik permainan dan integrasi fitur interaktif.',
-        funnyNote: 'Katanya testing game, tapi setengah hari cuma main Valorant.',
+        description: 'Katanya si ngikut aja',
+        funnyNote: 'jujur gatau aku',
         icon: <Gamepad2 size={30} />,
         color: '#845EC2',
         imgUrl: ''
@@ -94,10 +94,10 @@ function DeveloperTeam(): React.JSX.Element {
                             style={{ backgroundColor: developer.color }}
                         >
                             {developer.imgUrl ? (
-                                <img 
-                                    src={developer.imgUrl} 
-                                    alt={developer.name} 
-                                    className="developer-photo" 
+                                <img
+                                    src={developer.imgUrl}
+                                    alt={developer.name}
+                                    className="developer-photo"
                                 />
                             ) : (
                                 <div className="developer-initials">
