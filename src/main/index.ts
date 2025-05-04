@@ -3,6 +3,19 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { setupGameImporterHandlers } from './gameImporter'
+import { setupAchievementHandlers, checkAchievements } from './achievements'
+import { SimpleStore } from './store'
+
+// Initialize the store
+const store = new SimpleStore({
+  name: 'game-library',
+  defaults: {
+    games: []
+  }
+})
+
+// Make store accessible globally
+;(global as any).store = store
 
 let mainWindow: BrowserWindow | null = null
 
@@ -41,6 +54,16 @@ function createWindow(): void {
 
   // Set up game importer handlers
   setupGameImporterHandlers(mainWindow)
+  
+  // Set up achievement handlers
+  setupAchievementHandlers(mainWindow, store)
+  
+  // Check for completed achievements periodically
+  setInterval(() => {
+    if (mainWindow) {
+      checkAchievements(mainWindow, store)
+    }
+  }, 30000) // Check every 30 seconds
 }
 
 // This method will be called when Electron has finished

@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react'
-import { X, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
+import { X, Clock } from 'lucide-react'
 import SplashScreen from './components/SplashScreen'
 import Sidebar from './components/Sidebar'
 import GameLibrary, { Game as UIGame } from './components/GameLibrary'
-import FeaturedGame from './components/FeaturedGame'
 import StatsView from './components/StatsView'
 import GameImporter from './components/GameImporter'
 import DeveloperTeam from './components/DeveloperTeam'
+import Achievements from './components/Achievements'
+import DevTools from './components/DevTools'
+import HomePage from './components/HomePage'
+import Settings from './components/Settings'
+import AudioManager from './components/AudioManager'
 import { Game } from './types'
 
 // Define UI game type that extends the base Game type
@@ -25,19 +29,6 @@ interface GameUI extends UIGame {
   _originalPath: string;
   _originalImportDate: string;
 }
-
-// Format playtime to human-readable string
-// const formatPlaytime = (seconds: number): string => {
-//   if (seconds < 60) {
-//     return `${seconds}s`;
-//   } else if (seconds < 3600) {
-//     return `${Math.floor(seconds / 60)}m`;
-//   } else {
-//     const hours = Math.floor(seconds / 3600);
-//     const minutes = Math.floor((seconds % 3600) / 60);
-//     return `${hours}h ${minutes}m`;
-//   }
-// };
 
 // Map imported games to UI games
 const mapImportedGamesToUI = (games: Game[]): GameUI[] => {
@@ -77,14 +68,68 @@ function App(): React.JSX.Element {
   const [playingGame, setPlayingGame] = useState<GameUI | null>(null)
   const [playStartTime, setPlayStartTime] = useState<number | null>(null)
   const [noGamesMessage, setNoGamesMessage] = useState<string>('No games found. Import some games to get started.')
+  const [apiAvailabilityChecked, setApiAvailabilityChecked] = useState(false)
+  // Settings state
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('soundEnabled')
+    return saved !== null ? JSON.parse(saved) : true
+  })
+  const [volume, setVolume] = useState<number>(() => {
+    const saved = localStorage.getItem('volume')
+    return saved !== null ? JSON.parse(saved) : 0.5
+  })
 
   const appVersion = '1.0.0'
+  
+  // Save settings to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('soundEnabled', JSON.stringify(soundEnabled))
+  }, [soundEnabled])
+
+  useEffect(() => {
+    localStorage.setItem('volume', JSON.stringify(volume))
+  }, [volume])
+
+  // Check if API methods are available
+  useEffect(() => {
+    // Define a function to check if all required API methods are available
+    const checkApiAvailability = () => {
+      const apiMethods = [
+        'getGames',
+        'importGame',
+        'deleteGame',
+        'updateGameSettings',
+        'setGameStyle',
+        'trackPlaytime',
+        'launchGame',
+        'onGamesUpdated'
+      ];
+      
+      let allMethodsAvailable = true;
+      const missingMethods: string[] = [];
+      
+      apiMethods.forEach(method => {
+        if (!window.api || typeof window.api[method as keyof typeof window.api] !== 'function') {
+          allMethodsAvailable = false;
+          missingMethods.push(method);
+        }
+      });
+      
+      if (!allMethodsAvailable) {
+        console.warn('Missing API methods:', missingMethods);
+      }
+      
+      setApiAvailabilityChecked(true);
+    };
+    
+    checkApiAvailability();
+  }, []);
 
   // Fetch imported games
   useEffect(() => {
     const fetchGames = async () => {
       try {
-        if (window.api) {
+        if (window.api && typeof window.api.getGames === 'function') {
           const importedGamesList = await window.api.getGames();
 
           // Map the imported games to UI games
@@ -102,6 +147,10 @@ function App(): React.JSX.Element {
             setGames([]);
             setNoGamesMessage('No games found. Import some games to get started.');
           }
+        } else {
+          console.warn('getGames API method is not available');
+          setGames([]);
+          setNoGamesMessage('API methods not available. Application may need to be rebuilt.');
         }
       } catch (error) {
         console.error('Error fetching games:', error);
@@ -110,31 +159,39 @@ function App(): React.JSX.Element {
       }
     };
 
-    fetchGames();
+    if (apiAvailabilityChecked) {
+      fetchGames();
+    }
 
     // Set up games updated listener
-    const unsubscribe = window.api?.onGamesUpdated ? window.api.onGamesUpdated((updatedGames) => {
-      if (updatedGames && updatedGames.length > 0) {
-        const mappedGames = mapImportedGamesToUI(updatedGames);
-        setGames(mappedGames);
+    let unsubscribe: (() => void) | undefined;
+    
+    if (window.api && typeof window.api.onGamesUpdated === 'function') {
+      unsubscribe = window.api.onGamesUpdated((updatedGames) => {
+        if (updatedGames && updatedGames.length > 0) {
+          const mappedGames = mapImportedGamesToUI(updatedGames);
+          setGames(mappedGames);
 
-        // Set the featured game index to the first game if we have games and no current featured game
-        if (mappedGames.length > 0 && currentFeaturedIndex >= mappedGames.length) {
-          setCurrentFeaturedIndex(0);
+          // Set the featured game index to the first game if we have games and no current featured game
+          if (mappedGames.length > 0 && currentFeaturedIndex >= mappedGames.length) {
+            setCurrentFeaturedIndex(0);
+          }
+
+          setNoGamesMessage('');
+        } else {
+          setGames([]);
+          setNoGamesMessage('No games found. Import some games to get started.');
         }
-
-        setNoGamesMessage('');
-      } else {
-        setGames([]);
-        setNoGamesMessage('No games found. Import some games to get started.');
-      }
-    }) : () => { };
+      });
+    }
 
     // Clean up listener when component unmounts
     return () => {
-      unsubscribe && unsubscribe();
+      if (unsubscribe) {
+        unsubscribe();
+      }
     };
-  }, [currentFeaturedIndex]);
+  }, [currentFeaturedIndex, apiAvailabilityChecked]);
 
   // Handle splash screen finish
   const handleSplashFinish = (): void => {
@@ -186,26 +243,20 @@ function App(): React.JSX.Element {
     setPlayStartTime(null)
   }
 
-  // Handle previous featured game
-  const handlePrevFeatured = (): void => {
-    setCurrentFeaturedIndex(prev =>
-      prev === 0 ? games.length - 1 : prev - 1
-    )
-  }
-
-  // Handle next featured game
-  const handleNextFeatured = (): void => {
-    setCurrentFeaturedIndex(prev =>
-      prev === games.length - 1 ? 0 : prev + 1
-    )
-  }
-
   if (showSplash) {
     return <SplashScreen onFinish={handleSplashFinish} duration={3000} />
   }
 
   return (
     <div className="app-container">
+      {/* Audio Manager Component */}
+      {!showSplash && (
+        <AudioManager 
+          soundEnabled={soundEnabled}
+          volume={volume}
+        />
+      )}
+      
       <Sidebar
         onNavigate={handleNavigate}
         activePage={currentPage}
@@ -214,27 +265,37 @@ function App(): React.JSX.Element {
       <main className="main-content">
         {/* Playing Game View */}
         {playingGame ? (
-          <div className="game-playing">
+          <div className="game-playing-view fade-in">
             <div className="game-header">
-              <h2>{playingGame.title}</h2>
-              <button className="stop-button" onClick={handleStopPlaying}>
-                <X size={16} />
-                <span>Stop Playing</span>
+              <h1>{playingGame.title}</h1>
+              <button
+                className="close-game-btn"
+                onClick={handleStopPlaying}
+                aria-label="Stop Playing"
+              >
+                <X size={24} />
               </button>
             </div>
-            <div className="game-frame" style={{
-              backgroundColor: playingGame.color,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            }}>
-              <div className="game-placeholder">
-                <div className="game-icon-xl">{playingGame.icon}</div>
-                <p>Game is running from: {playingGame._originalPath}</p>
-                {playStartTime && (
-                  <p className="playing-timer">
-                    <Clock size={16} /> Playing since: {new Date(playStartTime).toLocaleTimeString()}
-                  </p>
-                )}
+
+            <div className="game-container">
+              <iframe
+                src={`${playingGame._originalPath}/index.html`}
+                title={playingGame.title}
+                className="game-iframe"
+                sandbox="allow-scripts allow-same-origin allow-forms"
+              />
+            </div>
+
+            <div className="game-toolbar">
+              <div className="game-time">
+                <Clock size={16} />
+                <span>
+                  {playStartTime
+                    ? `Playing: ${Math.floor(
+                      (Date.now() - playStartTime) / 60000
+                    )} minutes`
+                    : 'Starting game...'}
+                </span>
               </div>
             </div>
           </div>
@@ -242,79 +303,14 @@ function App(): React.JSX.Element {
           <>
             {/* Home Page */}
             {currentPage === 'home' && (
-              <div className="home-page fade-in">
-                <div className="page-header">
-                  <h1 className="page-title">Welcome to IGNITOR</h1>
-                </div>
-
-                {games.length > 0 ? (
-                  <>
-                    <div className="featured-slider-container">
-                      <button
-                        className="featured-arrow featured-prev"
-                        onClick={handlePrevFeatured}
-                        aria-label="Previous Game"
-                      >
-                        <ChevronLeft size={24} />
-                      </button>
-
-                      <FeaturedGame
-                        game={games[currentFeaturedIndex]}
-                        onPlay={handlePlayGame}
-                      />
-
-                      <button
-                        className="featured-arrow featured-next"
-                        onClick={handleNextFeatured}
-                        aria-label="Next Game"
-                      >
-                        <ChevronRight size={24} />
-                      </button>
-
-                      <div className="featured-indicators">
-                        {games.map((_, index) => (
-                          <button
-                            key={index}
-                            className={`featured-indicator ${index === currentFeaturedIndex ? 'active' : ''}`}
-                            onClick={() => setCurrentFeaturedIndex(index)}
-                            aria-label={`Game ${index + 1}`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="recent-games">
-                      <h2>Recent Games</h2>
-                      <div className="recent-games-grid">
-                        {games.map(game => (
-                          <div key={game.id} className="recent-game-card" onClick={() => handlePlayGame(game.id)}>
-                            <div className="recent-game-icon" style={{
-                              backgroundColor: game.color
-                            }}>
-                              {game.icon}
-                            </div>
-                            <div className="recent-game-info">
-                              <div className="recent-game-title">{game.title}</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="empty-state">
-                    <div className="empty-icon">🎮</div>
-                    <h2>Your Game Library is Empty</h2>
-                    <p>{noGamesMessage}</p>
-                    <button
-                      className="import-button"
-                      onClick={() => handleNavigate('import')}
-                    >
-                      Import Games
-                    </button>
-                  </div>
-                )}
-              </div>
+              <HomePage 
+                games={games}
+                currentFeaturedIndex={currentFeaturedIndex}
+                setCurrentFeaturedIndex={setCurrentFeaturedIndex}
+                handlePlayGame={handlePlayGame}
+                noGamesMessage={noGamesMessage}
+                onNavigate={handleNavigate}
+              />
             )}
 
             {/* Game Library */}
@@ -323,6 +319,11 @@ function App(): React.JSX.Element {
                 games={games}
                 onPlayGame={handlePlayGame}
               />
+            )}
+
+            {/* Achievements */}
+            {currentPage === 'achievements' && (
+              <Achievements />
             )}
 
             {/* Stats View */}
@@ -358,6 +359,21 @@ function App(): React.JSX.Element {
             {currentPage === 'import' && (
               <GameImporter
                 onNavigateToHome={() => handleNavigate('library')}
+              />
+            )}
+
+            {/* DevTools */}
+            {currentPage === 'devtools' && (
+              <DevTools />
+            )}
+
+            {/* Settings */}
+            {currentPage === 'settings' && (
+              <Settings
+                soundEnabled={soundEnabled}
+                setSoundEnabled={setSoundEnabled}
+                volume={volume}
+                setVolume={setVolume}
               />
             )}
           </>

@@ -12,7 +12,27 @@ interface Game {
   playTime?: Record<string, number>;
   lastPlayed?: string;
   totalPlayTime?: number;
+  achievements?: Record<string, boolean>; // Track unlocked achievements
 }
+
+// Achievement type definition
+interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  requirement: number;
+  type: 'games_added' | 'total_playtime' | 'games_played';
+  reward?: string;
+  rewardType?: 'background' | 'icon';
+}
+
+// Achievement progress type
+// interface AchievementProgress {
+//   achievement: Achievement;
+//   progress: number;
+//   unlocked: boolean;
+// }
 
 // Custom APIs for renderer
 const api = {
@@ -49,6 +69,19 @@ const api = {
     return ipcRenderer.invoke('launch-game', gamePath);
   },
   
+  // Achievement functions
+  getAchievements: () => {
+    return ipcRenderer.invoke('get-achievements');
+  },
+  
+  getAchievementProgress: () => {
+    return ipcRenderer.invoke('get-achievement-progress');
+  },
+  
+  unlockAchievement: (achievementId: string) => {
+    return ipcRenderer.invoke('unlock-achievement', achievementId);
+  },
+  
   // Event listeners
   onGamesUpdated: (callback: (games: Game[]) => void) => {
     const subscription = (_event: any, games: Game[]) => callback(games);
@@ -56,6 +89,15 @@ const api = {
     
     return () => {
       ipcRenderer.removeListener('games-updated', subscription);
+    };
+  },
+  
+  onAchievementUnlocked: (callback: (achievement: Achievement) => void) => {
+    const subscription = (_event: any, achievement: Achievement) => callback(achievement);
+    ipcRenderer.on('achievement-unlocked', subscription);
+    
+    return () => {
+      ipcRenderer.removeListener('achievement-unlocked', subscription);
     };
   }
 }

@@ -1,5 +1,8 @@
 import React from 'react'
 import { Coffee, Pizza, Gamepad2 } from 'lucide-react'
+import BedRest from '../assets/teams/bedrest.png'
+import Kartika from '../assets/teams/kartika.png'
+import Dea from '../assets/teams/dea.png'
 
 interface Developer {
     id: number
@@ -32,7 +35,7 @@ const developers: Developer[] = [
         funnyNote: 'when yh jago..',
         icon: <Coffee size={30} />,
         color: '#FF6B6B',
-        imgUrl: ''
+        imgUrl: BedRest
     },
     {
         id: 2,
@@ -54,7 +57,7 @@ const developers: Developer[] = [
         funnyNote: '2in',
         icon: <Pizza size={30} />,
         color: '#3B82F6',
-        imgUrl: ''
+        imgUrl: Dea
     },
     {
         id: 4,
@@ -65,7 +68,7 @@ const developers: Developer[] = [
         funnyNote: 'jujur gatau aku',
         icon: <Gamepad2 size={30} />,
         color: '#845EC2',
-        imgUrl: ''
+        imgUrl: Kartika
     }
 ]
 
@@ -79,7 +82,11 @@ function DeveloperTeam(): React.JSX.Element {
                 </div>
             </div>
 
-            <div className="developer-list">
+            <div className="developer-list" style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '2rem'
+            }}>
                 {developers.map(developer => (
                     <div
                         key={developer.id}

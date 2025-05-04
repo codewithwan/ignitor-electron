@@ -5,63 +5,12 @@ import path from 'path'
 // For launching executable files
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { spawn } = require('child_process')
+import { checkAchievements } from './achievements'
+import { SimpleStore } from './store'
 
-// Create a simple in-memory store since electron-store is causing issues
-class SimpleStore {
-  private data: Record<string, any>
-  private filePath: string
-
-  constructor(options: { name: string; defaults: Record<string, any> }) {
-    this.data = { ...options.defaults }
-
-    // Try to load data from file if it exists
-    const userDataPath = electronApp.getPath('userData')
-    this.filePath = path.join(userDataPath, `${options.name}.json`)
-
-    try {
-      if (fs.existsSync(this.filePath)) {
-        const fileContent = fs.readFileSync(this.filePath, 'utf-8')
-        this.data = JSON.parse(fileContent)
-      }
-    } catch (error) {
-      console.error('Error loading store file:', error)
-    }
-  }
-
-  get(key?: string): any {
-    if (key) {
-      return this.data[key]
-    }
-    return this.data
-  }
-
-  set(key: string | Record<string, any>, value?: any): void {
-    if (typeof key === 'string') {
-      this.data[key] = value
-    } else {
-      this.data = { ...this.data, ...key }
-    }
-
-    // Save data to file
-    this.save()
-  }
-
-  save(): void {
-    try {
-      fs.writeFileSync(this.filePath, JSON.stringify(this.data, null, 2), 'utf-8')
-    } catch (error) {
-      console.error('Error saving store file:', error)
-    }
-  }
-}
-
-// Initialize the store once, outside any function
-const store = new SimpleStore({
-  name: 'game-library',
-  defaults: {
-    games: []
-  }
-})
+// Import store from main process
+// The store is now initialized in the main index.ts file
+let store: SimpleStore;
 
 // Define the structure of a game entry
 interface Game {
@@ -74,6 +23,7 @@ interface Game {
   playTime?: Record<string, number> // Track play time in seconds by date
   lastPlayed?: string // ISO date string of last play
   totalPlayTime?: number // Total seconds played
+  achievements?: Record<string, boolean> // Track unlocked achievements
 }
 
 // Define store schema
@@ -82,6 +32,19 @@ interface Game {
 // }
 
 export function setupGameImporterHandlers(mainWindow: BrowserWindow) {
+  // Get the store instance from main.ts (passed as a parameter)
+  store = (global as any).store;
+  
+  if (!store) {
+    store = new SimpleStore({
+      name: 'game-library',
+      defaults: {
+        games: []
+      }
+    });
+    (global as any).store = store;
+  }
+
   // Get user data path
   const userDataPath = electronApp.getPath('userData')
   const gamesDirectory = path.join(userDataPath, 'games')
@@ -149,7 +112,8 @@ export function setupGameImporterHandlers(mainWindow: BrowserWindow) {
           id: gameId,
           name: gameFileName,
           path: gameDirectory,
-          importDate: new Date().toISOString()
+          importDate: new Date().toISOString(),
+          achievements: {}
         }
         
         // Get current games from store with a fallback to empty array
@@ -160,6 +124,9 @@ export function setupGameImporterHandlers(mainWindow: BrowserWindow) {
         
         // Save updated games array back to store
         store.set('games', games)
+        
+        // Check for achievements
+        checkAchievements(mainWindow, store)
         
         // Send updated game list to renderer
         mainWindow.webContents.send('games-updated', games)
@@ -323,6 +290,9 @@ export function setupGameImporterHandlers(mainWindow: BrowserWindow) {
       // Save updated game
       games[gameIndex] = game
       store.set('games', games)
+      
+      // Check for achievements
+      checkAchievements(mainWindow, store)
       
       // Send updated game list to renderer
       mainWindow.webContents.send('games-updated', games)
