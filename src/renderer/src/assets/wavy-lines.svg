@@ -1,0 +1,36 @@
+<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="wavyPattern" patternUnits="userSpaceOnUse" width="200" height="200">
+      <!-- Light blue wavy line -->
+      <path d="M0,40 Q25,20 50,40 T100,40 T150,40 T200,40" 
+            fill="none" stroke="#5b8def" stroke-width="2" stroke-opacity="0.1" />
+      
+      <!-- Light red wavy line -->
+      <path d="M0,80 Q25,60 50,80 T100,80 T150,80 T200,80" 
+            fill="none" stroke="#ff8f63" stroke-width="2" stroke-opacity="0.1" />
+      
+      <!-- Light green wavy line -->
+      <path d="M0,120 Q25,100 50,120 T100,120 T150,120 T200,120" 
+            fill="none" stroke="#75c46b" stroke-width="2" stroke-opacity="0.1" />
+      
+      <!-- Light yellow wavy line -->
+      <path d="M0,160 Q25,140 50,160 T100,160 T150,160 T200,160" 
+            fill="none" stroke="#ffb347" stroke-width="2" stroke-opacity="0.1" />
+      
+      <!-- Small dots -->
+      <circle cx="20" cy="30" r="3" fill="#5b8def" fill-opacity="0.1" />
+      <circle cx="60" cy="70" r="3" fill="#ff8f63" fill-opacity="0.1" />
+      <circle cx="100" cy="110" r="3" fill="#75c46b" fill-opacity="0.1" />
+      <circle cx="140" cy="150" r="3" fill="#ffb347" fill-opacity="0.1" />
+      <circle cx="180" cy="190" r="3" fill="#5b8def" fill-opacity="0.1" />
+      
+      <circle cx="40" cy="170" r="2" fill="#ff8f63" fill-opacity="0.1" />
+      <circle cx="80" cy="10" r="2" fill="#75c46b" fill-opacity="0.1" />
+      <circle cx="120" cy="50" r="2" fill="#ffb347" fill-opacity="0.1" />
+      <circle cx="160" cy="90" r="2" fill="#5b8def" fill-opacity="0.1" />
+      <circle cx="200" cy="130" r="2" fill="#ff8f63" fill-opacity="0.1" />
+    </pattern>
+  </defs>
+  
+  <rect width="100%" height="100%" fill="url(#wavyPattern)" />
+</svg>
